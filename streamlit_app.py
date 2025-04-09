@@ -4,99 +4,89 @@ from datetime import datetime, timedelta
 import os
 import base64
 
-# ---------------------- SETUP ----------------------
+# ---------------- SETUP ---------------- #
+st.set_page_config(page_title="007Garage", layout="centered")
 
-# Komponen dan estimasi km berikutnya
-komponen_km = {
+# Background image with blur
+bg_image_url = "https://images.unsplash.com/photo-1597003758344-937e7cf07074"  # Gambar bengkel
+page_bg = f"""
+<style>
+[data-testid="stAppViewContainer"] > .main {{
+    background-image: url("{bg_image_url}");
+    background-size: cover;
+    background-position: center;
+    filter: blur(4px);
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}}
+.blur-bg {{
+    background-color: rgba(255,255,255,0.8);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}}
+</style>
+"""
+st.markdown(page_bg, unsafe_allow_html=True)
+
+# File penyimpanan
+USER_FILE = "users.csv"
+if not os.path.exists(USER_FILE):
+    pd.DataFrame(columns=["Username", "Password"]).to_csv(USER_FILE, index=False)
+
+# Komponen & estimasi km
+KOMPONEN_KM = {
     "Oli Mesin": 2000,
     "Oli Gardan": 4000,
-    "Roller": 10000,
+    "Roller": 8000,
     "Vbelt": 10000,
     "Kampas Ganda": 12000,
-    "Busi": 8000,
-    "ACU": 16000,
-    "Per CVT": 12000,
-    "Per Kampas Ganda": 14000,
+    "Busi": 6000,
+    "Aki": 12000,
+    "Per CVT": 8000,
+    "Per Kampas Ganda": 8000
 }
+KOMPONEN_LIST = list(KOMPONEN_KM.keys())
 
-# Folder data per user
-DATA_DIR = "data_user"
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
-
-# ---------------------- AUTH ----------------------
-
-def load_users():
-    user_file = os.path.join(DATA_DIR, "users.csv")
-    if os.path.exists(user_file):
-        return pd.read_csv(user_file)
-    else:
-        return pd.DataFrame(columns=["username", "password"])
-
-def save_users(users_df):
-    users_df.to_csv(os.path.join(DATA_DIR, "users.csv"), index=False)
+# ---------------- LOGIN SYSTEM ---------------- #
+def login(username, password):
+    users = pd.read_csv(USER_FILE)
+    user = users[(users["Username"] == username) & (users["Password"] == password)]
+    return not user.empty
 
 def signup(username, password):
-    users = load_users()
-    if username in users["username"].values:
+    users = pd.read_csv(USER_FILE)
+    if username in users["Username"].values:
         return False
-    new_user = pd.DataFrame([[username, password]], columns=["username", "password"])
-    users = pd.concat([users, new_user], ignore_index=True)
-    save_users(users)
+    users.loc[len(users)] = [username, password]
+    users.to_csv(USER_FILE, index=False)
     return True
-
-def login(username, password):
-    users = load_users()
-    return ((users["username"] == username) & (users["password"] == password)).any()
-
-# ---------------------- BACKGROUND ----------------------
-
-def set_background():
-    bg_url = "https://images.unsplash.com/photo-1605559424843-1c4b819fa2c4?auto=format&fit=crop&w=1500&q=80"
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-image: url("{bg_url}");
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }}
-        .blur-bg {{
-            backdrop-filter: blur(6px);
-            background-color: rgba(255, 255, 255, 0.75);
-            padding: 2rem;
-            border-radius: 15px;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-set_background()
-
-# ---------------------- LOGIN PAGE ----------------------
 
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
+# Halaman login/signup
 if st.session_state["user"] is None:
     st.markdown("<div class='blur-bg'>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>🛠️ 007GARAGE</h2>", unsafe_allow_html=True)
     menu = st.radio("Login / Signup", ["Login", "Signup"])
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    with st.form("auth_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Submit")
 
-    if menu == "Login":
-        if st.button("Login"):
+    if submitted:
+        if menu == "Login":
             if login(username, password):
                 st.session_state["user"] = username
+                st.success("Login berhasil! Tunggu sebentar...")
                 st.experimental_rerun()
             else:
                 st.error("Username atau password salah.")
-    else:
-        if st.button("Signup"):
+        else:
             if signup(username, password):
                 st.success("Signup berhasil! Silakan login.")
             else:
@@ -104,85 +94,82 @@ if st.session_state["user"] is None:
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# ---------------------- MAIN APP ----------------------
-
-username = st.session_state["user"]
-csv_file = os.path.join(DATA_DIR, f"{username}_riwayat.csv")
-if not os.path.exists(csv_file):
-    pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"]).to_csv(csv_file, index=False)
-
+# ---------------- MAIN APP ---------------- #
 st.markdown("<div class='blur-bg'>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center;'>🛠️ 007GARAGE</h1>", unsafe_allow_html=True)
+
+CSV_FILE = f"riwayat_{st.session_state['user']}.csv"
+if not os.path.exists(CSV_FILE):
+    pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"]).to_csv(CSV_FILE, index=False)
+
+# ===== Tambah Data =====
 st.markdown("<h4 style='text-align: center;'>Tambah Data Maintenance</h4>", unsafe_allow_html=True)
 
-# Form Tambah Data
 with st.form("form_maintenance"):
-    tanggal = st.date_input("Tanggal", value=datetime.today())
-    komponen = st.multiselect("Komponen", list(komponen_km.keys()))
+    tanggal = st.date_input("Tanggal Penggantian", value=datetime.today())
+    komponen = st.multiselect("Komponen yang Diganti", KOMPONEN_LIST)
     km = st.number_input("KM Saat Ini", min_value=0, step=100)
     catatan = st.text_area("Catatan Tambahan", placeholder="Opsional")
     simpan = st.form_submit_button("Simpan Data")
 
 if simpan and komponen:
-    df = pd.read_csv(csv_file)
+    df = pd.read_csv(CSV_FILE)
     for item in komponen:
-        estimasi_km = km + komponen_km[item]
-        new_row = pd.DataFrame([[tanggal, item, km, catatan, estimasi_km]],
-                               columns=["Tanggal", "Komponen", "KM", "Catatan", "Estimasi KM Berikut"])
-        df = pd.concat([df, new_row], ignore_index=True)
-    df.to_csv(csv_file, index=False)
+        new_row = {
+            "Tanggal": tanggal,
+            "Komponen": item,
+            "KM": km,
+            "Catatan": catatan
+        }
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    df.to_csv(CSV_FILE, index=False)
     st.success("Data berhasil disimpan.")
 
-# Pencarian
-st.markdown("<h4>Riwayat Maintenance</h4>", unsafe_allow_html=True)
-search = st.text_input("Cari Komponen atau Catatan")
+# ===== Riwayat & Pencarian =====
+st.markdown("### Riwayat Maintenance")
+df = pd.read_csv(CSV_FILE)
 
-df = pd.read_csv(csv_file)
-if "Estimasi KM Berikut" not in df.columns:
-    df["Estimasi KM Berikut"] = df["KM"] + df["Komponen"].map(komponen_km)
-
+search = st.text_input("Cari berdasarkan komponen atau catatan...")
 if search:
-    df = df[df.apply(lambda x: search.lower() in str(x).lower(), axis=1)]
+    df = df[df.apply(lambda row: search.lower() in str(row["Komponen"]).lower() or search.lower() in str(row["Catatan"]).lower(), axis=1)]
 
-if not df.empty:
+if df.empty:
+    st.info("Belum ada data.")
+else:
     for idx, row in df.iterrows():
+        est_km = row["KM"] + KOMPONEN_KM.get(row["Komponen"], 2000)
         with st.expander(f"{row['Tanggal']} - {row['Komponen']} (KM: {row['KM']})"):
             st.markdown(f"**Catatan:** {row['Catatan']}")
-            st.markdown(f"**Estimasi Servis Berikutnya:** {int(row['Estimasi KM Berikut'])} KM")
+            st.markdown(f"**Estimasi Ganti Berikutnya:** KM {est_km}")
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("Edit", key=f"edit_{idx}"):
                     st.session_state["edit_index"] = idx
-                    st.rerun()
             with col2:
                 if st.button("Hapus", key=f"hapus_{idx}"):
                     df.drop(index=idx, inplace=True)
-                    df.to_csv(csv_file, index=False)
+                    df.to_csv(CSV_FILE, index=False)
                     st.success("Data berhasil dihapus.")
                     st.experimental_rerun()
-else:
-    st.info("Belum ada data maintenance.")
 
-# Edit Form
+# ===== Edit Data =====
 if "edit_index" in st.session_state:
     idx = st.session_state["edit_index"]
     row = df.iloc[idx]
-
-    st.markdown("<h4>Edit Data Maintenance</h4>", unsafe_allow_html=True)
+    st.markdown("### Edit Data Maintenance")
     with st.form("edit_form"):
         tanggal_edit = st.date_input("Tanggal", value=pd.to_datetime(row["Tanggal"]))
-        komponen_edit = st.selectbox("Komponen", list(komponen_km.keys()), index=list(komponen_km.keys()).index(row["Komponen"]))
+        komponen_edit = st.selectbox("Komponen", KOMPONEN_LIST, index=KOMPONEN_LIST.index(row["Komponen"]))
         km_edit = st.number_input("KM", value=int(row["KM"]), step=100)
         catatan_edit = st.text_area("Catatan", value=row["Catatan"])
-        simpan_update = st.form_submit_button("Update Data")
+        update = st.form_submit_button("Update Data")
 
-    if simpan_update:
+    if update:
         df.at[idx, "Tanggal"] = tanggal_edit
         df.at[idx, "Komponen"] = komponen_edit
         df.at[idx, "KM"] = km_edit
         df.at[idx, "Catatan"] = catatan_edit
-        df.at[idx, "Estimasi KM Berikut"] = km_edit + komponen_km[komponen_edit]
-        df.to_csv(csv_file, index=False)
+        df.to_csv(CSV_FILE, index=False)
         del st.session_state["edit_index"]
         st.success("Data berhasil diperbarui.")
         st.experimental_rerun()
