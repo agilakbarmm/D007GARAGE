@@ -5,10 +5,8 @@ import os
 
 st.set_page_config(page_title="D007Garage Maintenance Tracker", layout="centered")
 
-# File CSV untuk menyimpan data
+# ====== FILE CSV ======
 CSV_FILE = "riwayat_maintenance.csv"
-
-# Inisialisasi file jika belum ada
 if not os.path.exists(CSV_FILE):
     df_init = pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"])
     df_init.to_csv(CSV_FILE, index=False)
@@ -16,7 +14,7 @@ if not os.path.exists(CSV_FILE):
 st.title("D007Garage Maintenance Tracker")
 st.subheader("Tambah Data Maintenance")
 
-# Form input
+# ====== FORM INPUT ======
 with st.form("form_maintenance"):
     tanggal = st.date_input("Tanggal Penggantian", value=datetime.today())
     komponen_list = [
@@ -26,9 +24,9 @@ with st.form("form_maintenance"):
     komponen = st.multiselect("Komponen", komponen_list)
     km = st.number_input("KM Saat Ini", min_value=0, step=100)
     catatan = st.text_area("Catatan Tambahan", placeholder="Opsional")
-
     submit = st.form_submit_button("Simpan Data")
 
+# ====== SIMPAN DATA ======
 if submit and komponen:
     df = pd.read_csv(CSV_FILE)
     for item in komponen:
@@ -37,9 +35,8 @@ if submit and komponen:
     df.to_csv(CSV_FILE, index=False)
     st.success("Data berhasil disimpan.")
 
+# ====== RIWAYAT ======
 st.subheader("Riwayat Maintenance")
-
-# Load dan tampilkan data
 df = pd.read_csv(CSV_FILE)
 
 if not df.empty:
@@ -57,13 +54,17 @@ if not df.empty:
                     st.success("Data berhasil dihapus.")
                     st.experimental_rerun()
 
-# Edit data
+# ====== EDIT ======
 if "edit_index" in st.session_state:
     idx = st.session_state["edit_index"]
     row = df.iloc[idx]
     st.subheader("Edit Data Maintenance")
     with st.form("edit_form"):
         tanggal_edit = st.date_input("Tanggal", value=pd.to_datetime(row["Tanggal"]))
+        komponen_list = [
+            "Oli Mesin", "Oli Gardan", "Roller", "Vbelt", "Kampas Ganda",
+            "Busi", "Aki", "Per CVT", "Per Kampas Ganda"
+        ]
         komponen_edit = st.selectbox("Komponen", komponen_list, index=komponen_list.index(row["Komponen"]))
         km_edit = st.number_input("KM", value=int(row["KM"]), step=100)
         catatan_edit = st.text_area("Catatan", value=row["Catatan"])
@@ -75,6 +76,6 @@ if "edit_index" in st.session_state:
         df.at[idx, "KM"] = km_edit
         df.at[idx, "Catatan"] = catatan_edit
         df.to_csv(CSV_FILE, index=False)
-        st.success("Data berhasil diperbarui.")
         del st.session_state["edit_index"]
+        st.success("Data berhasil diperbarui.")
         st.experimental_rerun()
