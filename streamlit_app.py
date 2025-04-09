@@ -1,82 +1,61 @@
 import streamlit as st
+from datetime import datetime
 import pandas as pd
-import datetime
-from io import BytesIO
-import base64
+import os
 
-st.set_page_config(page_title="D007Garage Maintenance Tracker", layout="centered")
+st.set_page_config(
+    page_title="D007Garage Maintenance Tracker",
+    page_icon="🛠️",
+    layout="centered"
+)
 
-# Header rapi dan responsif untuk tampilan HP
+# Judul Aplikasi
 st.markdown(
     """
-    <div style='text-align: center; margin-bottom: 1rem;'>
-        <h2 style='margin-bottom: 0.2rem;'>🛵 D007Garage</h2>
-        <p style='font-size: 1.2rem; font-weight: bold;'>Maintenance Tracker</p>
+    <div style="text-align:center;">
+        <h1 style="font-size:2.5em; margin-bottom:0;">D007Garage</h1>
+        <h2 style="font-size:1.5em; margin-top:0;">Maintenance Tracker</h2>
     </div>
-    <hr style='border: 1px solid #444;'>
     """,
     unsafe_allow_html=True
 )
 
-st.title("D007Garage Maintenance Tracker")
+st.markdown("### Tambah Data Maintenance")
 
-# Inisialisasi data jika belum ada
-if "maintenance_data" not in st.session_state:
-    st.session_state.maintenance_data = pd.DataFrame(columns=[
-        "Tanggal Penggantian", "Komponen", "KM Saat Ini", "Catatan", "KM Selanjutnya", "Estimasi Tanggal Selanjutnya"
-    ])
-
-# Fungsi untuk menambahkan data maintenance
-def tambah_data(tanggal, komponen, km_saat_ini, catatan):
-    interval_km = 2000
-    km_selanjutnya = km_saat_ini + interval_km
-    estimasi_tanggal = tanggal + timedelta(days=60)
-    
-    data_baru = pd.DataFrame([{
-        "Tanggal Penggantian": tanggal,
-        "Komponen": komponen,
-        "KM Saat Ini": km_saat_ini,
-        "Catatan": catatan,
-        "KM Selanjutnya": km_selanjutnya,
-        "Estimasi Tanggal Selanjutnya": estimasi_tanggal
-    }])
-    
-    st.session_state.maintenance_data = pd.concat([st.session_state.maintenance_data, data_baru], ignore_index=True)
-
-# Form input
-st.subheader("Tambah Data Maintenance")
-with st.form("form_maintenance"):
+# Input Form
+with st.form("form_input"):
     tanggal = st.date_input("Tanggal Penggantian", value=datetime.today())
-    komponen = st.selectbox("Komponen", ["Oli Mesin", "Kampas Rem", "Busi", "Filter Udara", "Aki"])
+    komponen = st.selectbox("Komponen", ["Oli Mesin", "Kampas Rem", "Busi", "Ban", "Aki", "Filter Udara", "Rantai", "Lainnya"])
     km_saat_ini = st.number_input("KM Saat Ini", min_value=0, step=100)
     catatan = st.text_area("Catatan Tambahan", placeholder="Opsional")
-    submit = st.form_submit_button("Simpan Data", use_container_width=True)
-    
-    if submit:
-        tambah_data(tanggal, komponen, km_saat_ini, catatan)
-        st.success("Data berhasil disimpan!")
 
-# Menampilkan data
-st.subheader("Riwayat Maintenance")
-df = st.session_state.maintenance_data
+    submitted = st.form_submit_button("Simpan Data")
 
-if df.empty:
-    st.info("Belum ada data maintenance.")
-else:
+# Simpan ke file CSV
+file_path = "data_maintenance.csv"
+
+if submitted:
+    new_data = {
+        "Tanggal": tanggal.strftime("%Y-%m-%d"),
+        "Komponen": komponen,
+        "KM": km_saat_ini,
+        "Catatan": catatan
+    }
+
+    if os.path.exists(file_path):
+        df_lama = pd.read_csv(file_path)
+        df_baru = pd.DataFrame([new_data])
+        df = pd.concat([df_lama, df_baru], ignore_index=True)
+    else:
+        df = pd.DataFrame([new_data])
+
+    df.to_csv(file_path, index=False)
+    st.success("Data berhasil disimpan!")
+
+# Menampilkan Data Maintenance
+st.markdown("### Riwayat Maintenance")
+if os.path.exists(file_path):
+    df = pd.read_csv(file_path)
     st.dataframe(df)
-
-    # Fungsi untuk mengunduh sebagai Excel
-    def convert_df_to_excel(df):
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False, sheet_name="Data")
-        processed_data = output.getvalue()
-        return processed_data
-
-    excel_data = convert_df_to_excel(df)
-    st.download_button(
-        label="Download Data sebagai Excel",
-        data=excel_data,
-        file_name="data_maintenance.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+else:
+    st.info("Belum ada data maintenance.")
