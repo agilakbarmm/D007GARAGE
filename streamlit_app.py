@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import io
 
 st.set_page_config(page_title="Scoopy Maintenance Tracker", layout="wide")
 st.title("Scoopy Maintenance Tracker")
@@ -59,5 +60,14 @@ else:
     st.success("Belum ada komponen yang perlu diganti dalam 1000 KM ke depan.")
 
 st.subheader("Export Data")
-if st.download_button("Download sebagai Excel", data=st.session_state.data.to_excel(index=False), file_name="maintenance_scoopy.xlsx"):
-    st.success("File berhasil diunduh!")
+output = io.BytesIO()
+with pd.ExcelWriter(output, engine='openpyxl') as writer:
+    df.to_excel(writer, index=False, sheet_name='Data')
+processed_data = output.getvalue()
+
+st.download_button(
+    label="Download Excel",
+    data=processed_data,
+    file_name="maintenance_data.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
