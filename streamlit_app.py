@@ -76,7 +76,7 @@ if "edit_index" in st.session_state:
         tanggal_edit = st.date_input("Tanggal", value=pd.to_datetime(row["Tanggal"]))
         komponen_list = [
             "Oli Mesin", "Oli Gardan", "Roller", "Vbelt", "Kampas Ganda",
-            "Busi", "Aki", "Per CVT", "Per Kampas Ganda"
+            "Busi", "ACU", "Per CVT", "Per Kampas Ganda"
         ]
         komponen_edit = st.selectbox("Komponen", komponen_list, index=komponen_list.index(row["Komponen"]))
         km_edit = st.number_input("KM", value=int(row["KM"]), step=100)
