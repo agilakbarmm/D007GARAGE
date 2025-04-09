@@ -18,7 +18,6 @@ if not os.path.exists(CSV_FILE):
     df_init = pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"])
     df_init.to_csv(CSV_FILE, index=False)
 
-st.title("D007Garage Maintenance Tracker")
 st.subheader("Tambah Data Maintenance")
 
 # ====== FORM INPUT ======
