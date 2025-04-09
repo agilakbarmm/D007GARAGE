@@ -32,7 +32,7 @@ with st.form("form_maintenance"):
     tanggal = st.date_input("Tanggal Penggantian", value=datetime.today())
     komponen_list = [
         "Oli Mesin", "Oli Gardan", "Roller", "Vbelt", "Kampas Ganda",
-        "Busi", "Aki", "Per CVT", "Per Kampas Ganda"
+        "Busi", "ACU", "Per CVT", "Per Kampas Ganda"
     ]
     komponen = st.multiselect("Komponen", komponen_list)
     km = st.number_input("KM Saat Ini", min_value=0, step=100)
