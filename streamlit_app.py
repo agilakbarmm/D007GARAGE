@@ -18,7 +18,14 @@ if not os.path.exists(CSV_FILE):
     df_init = pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"])
     df_init.to_csv(CSV_FILE, index=False)
 
-st.subheader("Tambah Data Maintenance")
+st.markdown(
+    """
+    <div style='text-align: center; font-size: 20px; margin-bottom: 20px;'>
+        <strong>Tambah Data Maintenance</strong>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # ====== FORM INPUT ======
 with st.form("form_maintenance"):
