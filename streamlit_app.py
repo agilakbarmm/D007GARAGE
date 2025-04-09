@@ -5,8 +5,8 @@ import os
 
 st.markdown(
     """
-    <div style='text-align: center;'>
-        <h1 style='display: inline-block; vertical-align: middle; margin-right: 10px;'>🛠️ D007Garage Maintenance Tracker</h1>
+    <div style='text-align: center; margin-top: -30px;'>
+        <h1 style='font-size: 3em;'>🛠️ 007GARAGE</h1>
     </div>
     """,
     unsafe_allow_html=True
