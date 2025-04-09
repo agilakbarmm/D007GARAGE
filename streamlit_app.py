@@ -1,126 +1,108 @@
-import streamlit as st import pandas as pd from datetime import datetime import os
+import streamlit as st import pandas as pd from datetime import datetime, timedelta import os import base64
 
-===== BACKGROUND IMAGE WITH BLUR =====
+---------------------- SETUP ----------------------
 
-page_bg_img = f"""
+st.set_page_config(page_title="007GARAGE", layout="centered")
 
-<style>
-[data-testid="stAppViewContainer"] > .main {{
-    background-image: url("https://images.unsplash.com/photo-1605902711622-cfb43c4437d1?auto=format&fit=crop&w=1350&q=80");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    backdrop-filter: blur(5px);
-    color: white;
-}}
+Background image
 
-h1, h2, h3, h4, h5, h6, .stTextInput, .stNumberInput, .stDateInput, .stTextArea {{
-    color: white;
-}}
-</style>"""
+def set_background(image_path): with open(image_path, "rb") as image_file: encoded = base64.b64encode(image_file.read()).decode() st.markdown( f""" <style> .stApp {{ background-image: url("data:image/jpg;base64,{encoded}"); background-size: cover; }} .blur-layer {{ background-color: rgba(255, 255, 255, 0.75); padding: 1rem; border-radius: 10px; }} </style> """, unsafe_allow_html=True )
 
-st.markdown(page_bg_img, unsafe_allow_html=True)
+set_background("bengkel.jpg")  # Pastikan file 'bengkel.jpg' ada di repo
 
-===== USER AUTH =====
+---------------------- FILE CSV ----------------------
 
-USERS_FILE = "users.csv" if not os.path.exists(USERS_FILE): df_users = pd.DataFrame(columns=["username", "password"]) df_users.to_csv(USERS_FILE, index=False)
+CSV_FILE = "riwayat_maintenance.csv" if not os.path.exists(CSV_FILE): df_init = pd.DataFrame(columns=["User", "Tanggal", "Komponen", "KM", "Catatan"]) df_init.to_csv(CSV_FILE, index=False)
 
-===== SESSION STATE =====
+---------------------- AUTH SYSTEM ----------------------
 
-if "logged_in" not in st.session_state: st.session_state.logged_in = False if "username" not in st.session_state: st.session_state.username = ""
+USER_DB = "users.csv" if not os.path.exists(USER_DB): pd.DataFrame(columns=["username", "password"]).to_csv(USER_DB, index=False)
 
-===== LOGIN & SIGNUP FORM =====
+def signup(username, password): df_users = pd.read_csv(USER_DB) if username in df_users["username"].values: return False df_users = df_users.append({"username": username, "password": password}, ignore_index=True) df_users.to_csv(USER_DB, index=False) return True
 
-def login_form(): st.title("🛠️ 007GARAGE") st.markdown("#### Login Pengguna") username = st.text_input("Username") password = st.text_input("Password", type="password") if st.button("Login"): df_users = pd.read_csv(USERS_FILE) if not df_users[(df_users.username == username) & (df_users.password == password)].empty: st.session_state.logged_in = True st.session_state.username = username st.success("Login berhasil.") st.experimental_rerun() else: st.error("Username atau password salah.")
+def login(username, password): df_users = pd.read_csv(USER_DB) return any((df_users["username"] == username) & (df_users["password"] == password))
 
-st.markdown("---")
-st.markdown("#### Belum punya akun?")
-new_user = st.text_input("Buat Username Baru", key="new_user")
-new_pass = st.text_input("Buat Password", type="password", key="new_pass")
-if st.button("Daftar"):
-    df_users = pd.read_csv(USERS_FILE)
-    if new_user in df_users.username.values:
-        st.warning("Username sudah terdaftar.")
-    else:
-        df_users = df_users.append({"username": new_user, "password": new_pass}, ignore_index=True)
-        df_users.to_csv(USERS_FILE, index=False)
-        st.success("Pendaftaran berhasil. Silakan login.")
+if "user" not in st.session_state: st.session_state.user = None
 
-===== MAIN APP =====
+---------------------- LOGIN & SIGNUP UI ----------------------
 
-def main_app(): st.markdown(""" <div style='text-align: center;'> <h1 style='font-size: 3em;'>🛠️ 007GARAGE</h1> </div> """, unsafe_allow_html=True)
+if st.session_state.user is None: st.markdown(""" <div class='blur-layer' style='text-align: center;'> <h1 style='font-size: 3em;'>🛠️ 007GARAGE</h1> <p>Login untuk melanjutkan</p> </div> """, unsafe_allow_html=True)
 
-CSV_FILE = f"data_{st.session_state.username}.csv"
-if not os.path.exists(CSV_FILE):
-    df_init = pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"])
-    df_init.to_csv(CSV_FILE, index=False)
+tab1, tab2 = st.tabs(["Login", "Sign Up"])
+
+with tab1:
+    user_login = st.text_input("Username")
+    pass_login = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if login(user_login, pass_login):
+            st.session_state.user = user_login
+            st.experimental_rerun()
+        else:
+            st.error("Username atau password salah")
+
+with tab2:
+    user_reg = st.text_input("Buat Username")
+    pass_reg = st.text_input("Buat Password", type="password")
+    if st.button("Sign Up"):
+        if signup(user_reg, pass_reg):
+            st.success("Berhasil daftar. Silakan login.")
+        else:
+            st.error("Username sudah terdaftar.")
+
+st.stop()
+
+---------------------- MAIN APP ----------------------
 
 st.markdown("""
-    <div style='text-align: center; font-size: 20px;'>
-        <strong>Tambah Data Maintenance</strong>
+
+<div class='blur-layer'>
+    <div style='text-align: center;'>
+        <h1 style='font-size: 2.5em;'>🛠️ 007GARAGE</h1>
+        <p>Selamat datang, <strong>{}</strong>!</p>
     </div>
-""", unsafe_allow_html=True)
+</div>
+""".format(st.session_state.user), unsafe_allow_html=True)st.markdown("""
 
-with st.form("form_maintenance"):
-    tanggal = st.date_input("Tanggal Penggantian", value=datetime.today())
-    komponen_list = ["Oli Mesin", "Oli Gardan", "Roller", "Vbelt", "Kampas Ganda", "Busi", "Aki", "Per CVT", "Per Kampas Ganda"]
-    komponen = st.multiselect("Komponen", komponen_list)
-    km = st.number_input("KM Saat Ini", min_value=0, step=100)
-    catatan = st.text_area("Catatan Tambahan", placeholder="Opsional")
-    submit = st.form_submit_button("Simpan Data")
+<div style='text-align: center; font-size: 18px; margin-top: 20px; margin-bottom: 10px;'>
+    <strong>Tambah Data Maintenance</strong>
+</div>
+""", unsafe_allow_html=True)---------------------- FORM INPUT ----------------------
 
-if submit and komponen:
-    df = pd.read_csv(CSV_FILE)
-    for item in komponen:
-        new_data = pd.DataFrame([[tanggal, item, km, catatan]], columns=["Tanggal", "Komponen", "KM", "Catatan"])
-        df = pd.concat([df, new_data], ignore_index=True)
+komponen_estimasi = { "Oli Mesin": 2000, "Oli Gardan": 8000, "Roller": 24000, "Vbelt": 24000, "Kampas Ganda": 18000, "Busi": 8000, "Aki": 20000, "Per CVT": 24000, "Per Kampas Ganda": 24000, }
+
+with st.form("form_maintenance"): tanggal = st.date_input("Tanggal Penggantian", value=datetime.today()) komponen = st.multiselect("Komponen", list(komponen_estimasi.keys())) km = st.number_input("KM Saat Ini", min_value=0, step=100) catatan = st.text_area("Catatan Tambahan", placeholder="Opsional") submit = st.form_submit_button("Simpan Data")
+
+---------------------- SIMPAN DATA ----------------------
+
+if submit and komponen: df = pd.read_csv(CSV_FILE) for item in komponen: new_data = pd.DataFrame([[st.session_state.user, tanggal, item, km, catatan]], columns=["User", "Tanggal", "Komponen", "KM", "Catatan"]) df = pd.concat([df, new_data], ignore_index=True) df.to_csv(CSV_FILE, index=False) st.success("Data berhasil disimpan.")
+
+---------------------- PENCARIAN DAN RIWAYAT ----------------------
+
+st.markdown("<hr>", unsafe_allow_html=True) st.subheader("Riwayat Maintenance")
+
+df = pd.read_csv(CSV_FILE) df = df[df["User"] == st.session_state.user]
+
+search_query = st.text_input("Cari komponen atau catatan") if search_query: df = df[df.apply(lambda x: search_query.lower() in str(x).lower(), axis=1)]
+
+if not df.empty: for idx, row in df.iterrows(): estimasi_km = komponen_estimasi.get(row["Komponen"], 2000) + int(row["KM"]) with st.expander(f"{row['Tanggal']} - {row['Komponen']} (KM: {row['KM']})"): st.markdown(f"Catatan: {row['Catatan']}") st.markdown(f"Estimasi Servis Berikutnya: {estimasi_km} KM") col1, col2 = st.columns(2) with col1: if st.button("Edit", key=f"edit_{idx}"): st.session_state["edit_index"] = idx with col2: if st.button("Hapus", key=f"hapus_{idx}"): df.drop(index=idx, inplace=True) df.to_csv(CSV_FILE, index=False) st.success("Data berhasil dihapus.") st.experimental_rerun()
+
+---------------------- EDIT DATA ----------------------
+
+if "edit_index" in st.session_state: idx = st.session_state["edit_index"] row = df.iloc[idx] st.subheader("Edit Data Maintenance") with st.form("edit_form"): tanggal_edit = st.date_input("Tanggal", value=pd.to_datetime(row["Tanggal"])) komponen_edit = st.selectbox("Komponen", list(komponen_estimasi.keys()), index=list(komponen_estimasi.keys()).index(row["Komponen"])) km_edit = st.number_input("KM", value=int(row["KM"]), step=100) catatan_edit = st.text_area("Catatan", value=row["Catatan"]) update = st.form_submit_button("Update Data")
+
+if update:
+    df.at[idx, "Tanggal"] = tanggal_edit
+    df.at[idx, "Komponen"] = komponen_edit
+    df.at[idx, "KM"] = km_edit
+    df.at[idx, "Catatan"] = catatan_edit
     df.to_csv(CSV_FILE, index=False)
-    st.success("Data berhasil disimpan.")
+    del st.session_state["edit_index"]
+    st.success("Data berhasil diperbarui.")
+    st.experimental_rerun()
 
-# ===== SEARCH =====
-st.subheader("Riwayat Maintenance")
-df = pd.read_csv(CSV_FILE)
-search = st.text_input("Cari berdasarkan komponen...")
-if search:
-    df = df[df["Komponen"].str.contains(search, case=False, na=False)]
+st.markdown(""" <style> textarea, input, .stButton>button { font-size: 16px !important; } </style> """, unsafe_allow_html=True)
 
-if not df.empty:
-    for idx, row in df.iterrows():
-        with st.expander(f"{row['Tanggal']} - {row['Komponen']} (KM: {row['KM']})"):
-            st.markdown(f"**Catatan:** {row['Catatan']}")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Edit", key=f"edit_{idx}"):
-                    st.session_state["edit_index"] = idx
-            with col2:
-                if st.button("Hapus", key=f"hapus_{idx}"):
-                    df.drop(index=idx, inplace=True)
-                    df.to_csv(CSV_FILE, index=False)
-                    st.success("Data berhasil dihapus.")
-                    st.experimental_rerun()
+---------------------- LOGOUT ----------------------
 
-if "edit_index" in st.session_state:
-    idx = st.session_state.edit_index
-    row = df.iloc[idx]
-    st.markdown("<h3 style='text-align: center;'>Edit Data Maintenance</h3>", unsafe_allow_html=True)
-    with st.form("edit_form"):
-        tanggal_edit = st.date_input("Tanggal", value=pd.to_datetime(row["Tanggal"]))
-        komponen_list = ["Oli Mesin", "Oli Gardan", "Roller", "Vbelt", "Kampas Ganda", "Busi", "Aki", "Per CVT", "Per Kampas Ganda"]
-        komponen_edit = st.selectbox("Komponen", komponen_list, index=komponen_list.index(row["Komponen"]))
-        km_edit = st.number_input("KM", value=int(row["KM"]), step=100)
-        catatan_edit = st.text_area("Catatan", value=row["Catatan"])
-        update = st.form_submit_button("Update Data")
-    if update:
-        df.at[idx, "Tanggal"] = tanggal_edit
-        df.at[idx, "Komponen"] = komponen_edit
-        df.at[idx, "KM"] = km_edit
-        df.at[idx, "Catatan"] = catatan_edit
-        df.to_csv(CSV_FILE, index=False)
-        del st.session_state["edit_index"]
-        st.success("Data berhasil diperbarui.")
-        st.experimental_rerun()
-
-===== MAIN =====
-
-if not st.session_state.logged_in: login_form() else: main_app()
+st.markdown("<hr>", unsafe_allow_html=True) if st.button("Logout"): st.session_state.user = None st.experimental_rerun()
 
