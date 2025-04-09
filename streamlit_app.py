@@ -153,7 +153,7 @@ if not df.empty:
             with col1:
                 if st.button("Edit", key=f"edit_{idx}"):
                     st.session_state["edit_index"] = idx
-                    st.experimental_rerun()
+                    st.rerun()
             with col2:
                 if st.button("Hapus", key=f"hapus_{idx}"):
                     df.drop(index=idx, inplace=True)
