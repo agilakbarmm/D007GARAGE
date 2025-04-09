@@ -1,14 +1,13 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
-import base64
 
 # ---------------- SETUP ---------------- #
 st.set_page_config(page_title="007Garage", layout="centered")
 
-# Background image with blur
-bg_image_url = "https://images.unsplash.com/photo-1597003758344-937e7cf07074"  # Gambar bengkel
+# Background blur
+bg_image_url = "https://images.unsplash.com/photo-1597003758344-937e7cf07074"
 page_bg = f"""
 <style>
 [data-testid="stAppViewContainer"] > .main {{
@@ -22,9 +21,9 @@ page_bg = f"""
     z-index: -1;
 }}
 .blur-bg {{
-    background-color: rgba(255,255,255,0.8);
+    background-color: rgba(255,255,255,0.85);
     padding: 2rem;
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }}
 </style>
@@ -32,9 +31,9 @@ page_bg = f"""
 st.markdown(page_bg, unsafe_allow_html=True)
 
 # File penyimpanan
-USER_FILE = "users.csv"
-if not os.path.exists(USER_FILE):
-    pd.DataFrame(columns=["Username", "Password"]).to_csv(USER_FILE, index=False)
+CSV_FILE = "riwayat_motor.csv"
+if not os.path.exists(CSV_FILE):
+    pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"]).to_csv(CSV_FILE, index=False)
 
 # Komponen & estimasi km
 KOMPONEN_KM = {
@@ -50,57 +49,9 @@ KOMPONEN_KM = {
 }
 KOMPONEN_LIST = list(KOMPONEN_KM.keys())
 
-# ---------------- LOGIN SYSTEM ---------------- #
-def login(username, password):
-    users = pd.read_csv(USER_FILE)
-    user = users[(users["Username"] == username) & (users["Password"] == password)]
-    return not user.empty
-
-def signup(username, password):
-    users = pd.read_csv(USER_FILE)
-    if username in users["Username"].values:
-        return False
-    users.loc[len(users)] = [username, password]
-    users.to_csv(USER_FILE, index=False)
-    return True
-
-if "user" not in st.session_state:
-    st.session_state["user"] = None
-
-# Halaman login/signup
-if st.session_state["user"] is None:
-    st.markdown("<div class='blur-bg'>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center;'>🛠️ 007GARAGE</h2>", unsafe_allow_html=True)
-    menu = st.radio("Login / Signup", ["Login", "Signup"])
-
-    with st.form("auth_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Submit")
-
-    if submitted:
-        if menu == "Login":
-            if login(username, password):
-                st.session_state["user"] = username
-                st.success("Login berhasil! Tunggu sebentar...")
-                st.experimental_rerun()
-            else:
-                st.error("Username atau password salah.")
-        else:
-            if signup(username, password):
-                st.success("Signup berhasil! Silakan login.")
-            else:
-                st.error("Username sudah digunakan.")
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()
-
 # ---------------- MAIN APP ---------------- #
 st.markdown("<div class='blur-bg'>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center;'>🛠️ 007GARAGE</h1>", unsafe_allow_html=True)
-
-CSV_FILE = f"riwayat_{st.session_state['user']}.csv"
-if not os.path.exists(CSV_FILE):
-    pd.DataFrame(columns=["Tanggal", "Komponen", "KM", "Catatan"]).to_csv(CSV_FILE, index=False)
 
 # ===== Tambah Data =====
 st.markdown("<h4 style='text-align: center;'>Tambah Data Maintenance</h4>", unsafe_allow_html=True)
