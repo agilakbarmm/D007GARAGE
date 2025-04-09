@@ -1,30 +1,19 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
-import io
+import datetime
+from io import BytesIO
+import base64
 
-st.set_page_config(page_title="D007Garage", page_icon=":racing_car:", layout="wide")
+st.set_page_config(page_title="D007Garage Maintenance Tracker", layout="centered")
 
-# CSS untuk tampilan mobile-friendly
+# Header rapi dan responsif untuk tampilan HP
 st.markdown(
     """
-    <style>
-        .block-container {
-            max-width: 100%;
-            padding: 1rem;
-        }
-        textarea, input, select {
-            font-size: 16px !important;
-        }
-        button[kind="primary"] {
-            width: 100% !important;
-            font-size: 16px !important;
-        }
-        .stDownloadButton > button {
-            width: 100% !important;
-            font-size: 16px !important;
-        }
-    </style>
+    <div style='text-align: center; margin-bottom: 1rem;'>
+        <h2 style='margin-bottom: 0.2rem;'>🛵 D007Garage</h2>
+        <p style='font-size: 1.2rem; font-weight: bold;'>Maintenance Tracker</p>
+    </div>
+    <hr style='border: 1px solid #444;'>
     """,
     unsafe_allow_html=True
 )
