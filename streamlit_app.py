@@ -3,7 +3,14 @@ import pandas as pd
 from datetime import datetime
 import os
 
-st.set_page_config(page_title="D007Garage Maintenance Tracker", layout="centered")
+st.markdown(
+    """
+    <div style='text-align: center;'>
+        <h1 style='display: inline-block; vertical-align: middle; margin-right: 10px;'>🛠️ D007Garage Maintenance Tracker</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # ====== FILE CSV ======
 CSV_FILE = "riwayat_maintenance.csv"
