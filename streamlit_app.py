@@ -1,4 +1,8 @@
-import streamlit as st import pandas as pd from datetime import datetime, timedelta import os import base64
+import streamlit as st 
+import pandas as pd 
+from datetime import datetime, timedelta 
+import os 
+import base64
 
 ---------------------- SETUP ----------------------
 
